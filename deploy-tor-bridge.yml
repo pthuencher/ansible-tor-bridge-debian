@@ -1,0 +1,32 @@
+---
+  - name: Deploy Tor-Bridge
+    hosts: bridges
+    tasks:
+
+      - name: Install required packages
+        apt:
+          name: 
+            - unattended-upgrades
+            - apt-listchanges
+            - tor
+            - obfs4proxy
+            - nyx
+          update_cache: true
+          state: latest
+
+      - name: Enable automatic updates
+        template: src={{ item.src }} dest={{ item.dest }}
+        with_items:
+          - { src: "./templates/50unattended-upgrades.j2", dest: "/etc/apt/apt.conf.d/50unattended-upgrades" }
+          - { src: "./templates/20auto-upgrades.j2", dest: "/etc/apt/apt.conf.d/20auto-upgrades" }
+
+      - name: Configure Tor
+        template:
+          src: ./templates/torrc.j2
+          dest: /etc/tor/torrc
+
+      - name: Start Tor
+        systemd:
+          name: tor
+          daemon_reload: yes
+          state: reloaded
